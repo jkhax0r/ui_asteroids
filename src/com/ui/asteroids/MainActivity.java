@@ -21,6 +21,8 @@ import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.util.Log;
 import javax.microedition.khronos.egl.EGLConfig;
 
@@ -57,7 +59,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private final float[] mLightPosInEyeSpace = new float[4];
 
     private static final int COORDS_PER_VERTEX = 3;
-
+    
     private final WorldLayoutData DATA = new WorldLayoutData(); 
 
     private FloatBuffer mFloorVertices;
@@ -93,7 +95,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float mFloorDepth = 20f;
 
     private Vibrator mVibrator;
-
+    private SoundPool sfx = new SoundPool(10,AudioManager.STREAM_MUSIC,0);
+    private static int sfxPew;   
+    private static int sfxExplosion;
+    private static int sfxLongPew;
+    
     private CardboardOverlayView mOverlayView;
 
     /**
@@ -151,6 +157,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
+        
 
         mModelCube = new float[16];
         mCamera = new float[16];
@@ -164,8 +171,15 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         mOverlayView = (CardboardOverlayView) findViewById(R.id.overlay);
         mOverlayView.show3DToast("Pull the magnet when you find an object.");
+        initSoundFX();
     }
 
+    private void initSoundFX(){
+    	sfxPew = sfx.load(this, R.raw.pew,1);
+    	sfxExplosion = sfx.load(this, R.raw.explosion,1);
+    	sfxLongPew = sfx.load(this, R.raw.longpew,1);
+    }
+    
     @Override
     public void onRendererShutdown() {
         Log.i(TAG, "onRendererShutdown");
@@ -405,17 +419,21 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
      */
     @Override
     public void onCardboardTrigger() {
-        Log.i(TAG, "onCardboardTrigger");
-
+        Log.i(TAG, "onCardboardTrigger");    
+        
         if (isLookingAtObject()) {
             mScore++;
+            sfx.play(sfxExplosion,0.99f,0.99f,1,0,1.0f);
+            sfx.play(sfxLongPew,0.99f,0.99f,1,0,1.0f);
             mOverlayView.show3DToast("Found it! Look around for another one.\nScore = " + mScore);
             hideObject();
         } else {
+            sfx.play(sfxLongPew,0.99f,0.99f,1,0,2.0f);
             mOverlayView.show3DToast("Look around to find the object!");
         }
         // Always give user feedback
         mVibrator.vibrate(50);
+
     }
 
     /**
